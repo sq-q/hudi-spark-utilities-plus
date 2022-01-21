@@ -2,6 +2,8 @@
 Refactor the Hudi-based Spark library. 
 # **Refactor**
 Improved code maintainability, readability, and extensibility
+# **feature**
+You can fill in the parameters according to your business needs and avoid modifying the code multiple times.
 # **Requirements**
 The library currently supports the following versions of components：
 
