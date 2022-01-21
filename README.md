@@ -1,2 +1,57 @@
 # hudi-spark-utilities-plus
-test
+Refactor the Hudi-based Spark library. 
+# **Refactor**
+Improved code maintainability, readability, and extensibility
+# **Requirements**
+The library currently supports the following versions of components：
+
+（1）Scala：2.12.x
+
+（2）Spark：3.1.x
+
+（3）Hudi：0.9.0
+# **feature**
+You can fill in the parameters according to your business needs and avoid modifying the code multiple times.
+# **Features**
+In addition to the basic features of data lake through Hudi (https://github.com/apache/hudi) , it has the ability to consume upstream CDC change logs, and customize the sink connector to synchronize multiple tables of RDBMS into data lake. It greatly improves the development cost of streaming CDC change logs into warehousing.
+# **How to do?**
+We use Spark CDC scheme to obtain upstream change log records. We need to thank allwefantasy for providing it with a dependency library spark-binlog (https://github.com/allwefantasy/spark-binlog) and AirToSupply providing it with the spark-cdc code(https://github.com/AirToSupply/hudi-spark-plus).
+
+Unfortunately, the latest version of this dependency library is 1.0.4, and Spark 3.1.x is not supported. We have made a patch related to spark 3.1.x to recommend this work. This part of the code is not in the mavne public warehouse for the time being.
+
+You need to introduce spark binlog and the current dependency library. Note that you should not forget to introduce your database connection driver. Currently, only supported MySQL.
+
+The codes involved are as follows：
+~~~~
+val df = spark.readStream.
+          format("mysql-binlog").
+          options(Map(
+            "host" -> cfg.host,
+            "port" -> cfg.port,
+            "userName" -> cfg.username,
+            "password" -> cfg.password,
+            "databaseNamePattern" -> cfg.database,
+            "tableNamePattern" -> cfg.tables.replaceAll(",", "\\|"),
+            "bingLogNamePrefix" -> cfg.binaryLogNamePrefix,
+            "binlogIndex" -> cfg.binaryLogIndex,
+            "binlogFileOffset" -> cfg.binarylogFileOffset
+          )).load
+    
+        df.writeStream.
+          outputMode("append").
+          format("binlog-hudi").
+          option("path", StringUtils.EMPTY).
+          option("mode", "Append").
+          option("option.hoodie.path", cfg.hoodiePathPattern).
+          option("checkpointLocation", cfg.checkpoint).
+          options(hoodieTablesConfig.toMap).
+          trigger(Trigger.ProcessingTime(s"${cfg.triggerTime} seconds")).
+          start().
+          awaitTermination()
+~~~~
+# **Note**
+（1）For the configuration and usage of spark binlog, please refer to: https://github.com/allwefantasy/spark-binlog/blob/master/README.md .
+
+（2）BinlogHoudieDataSource supports multi table synchronization into data lake, and the attribute behavior of each table is different, which requires users to configure different attributes of each data Lake table before it can be correctly consumed in real time.
+
+（3）For Hudi related configuration, please refer to the official website of Hudi. Because there are many Hudi configuration items, these complex configuration items can be found in the Hudi spark datasource module of Hudi project, so users should abide by the following rules when specifying these parameters: ${db_name}.${table_name}.${hoodie_config_key} .
