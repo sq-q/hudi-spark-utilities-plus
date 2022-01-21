@@ -1,0 +1,33 @@
+${SPARK_HOME}/bin/spark-submit \
+--master ${SPARK_MASTER} \
+--driver-class-path ${HIVE_HOME}/conf/ \
+--executor-memory 4g \
+--driver-memory 4g \
+--num-executors 4 \
+--total-executor-cores 4 \
+--conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
+--conf spark.sql.legacy.parquet.datetimeRebaseModeInRead=CORRECTED \
+--conf spark.sql.hive.convertMetastoreParquet=false \
+--class tech.odes.hudi.spark.deltastreamer.HoodieBinlogDeltaStreamer \
+/opt/${APP_JAR_PATH} \
+--host 172.16.2.120 \
+--port 3306 \
+--username root \
+--password 123456 \
+--database db_issue_clear \
+--tables person,student \
+--binlog-name-prefix mysql-bin \
+--binlog-index 1 \
+--binlog-offset 293299 \
+--checkpoint /hudi/tmp/spark-cdc-hudi-sync-suite/ \
+--trigger-time 10 \
+--hoodie-conf db_issue_clear.person.hoodie.base.path=/hudi/tmp/db_issue_clear/ods_db_issue_clear_person \
+--hoodie-conf db_issue_clear.person.hoodie.table.name=ods_db_issue_clear_person \
+--hoodie-conf db_issue_clear.person.hoodie.datasource.write.recordkey.field=id \
+--hoodie-conf db_issue_clear.person.hoodie.datasource.write.precombine.field=id \
+--hoodie-conf db_issue_clear.person.hoodie.datasource.write.keygenerator.class=org.apache.hudi.keygen.NonpartitionedKeyGenerator \
+--hoodie-conf db_issue_clear.student.hoodie.base.path=/hudi/tmp/db_issue_clear/ods_db_issue_clear_student \
+--hoodie-conf db_issue_clear.student.hoodie.table.name=ods_db_issue_clear_student \
+--hoodie-conf db_issue_clear.student.hoodie.datasource.write.recordkey.field=id \
+--hoodie-conf db_issue_clear.student.hoodie.datasource.write.precombine.field=id \
+--hoodie-conf db_issue_clear.student.hoodie.datasource.write.keygenerator.class=org.apache.hudi.keygen.NonpartitionedKeyGenerator
