@@ -1,8 +1,8 @@
-package tech.odes.hudi.spark
+package tech.odes.hudi.spark.deltastreamer
 
+import java.util.Objects
 
-import com.beust.jcommander.JCommander
-import com.beust.jcommander.Parameter
+import com.beust.jcommander.{JCommander, Parameter}
 import com.beust.jcommander.internal.Lists
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.conf.Configuration
@@ -10,14 +10,14 @@ import org.apache.hadoop.fs.Path
 import org.apache.hudi.common.config.TypedProperties
 import org.apache.hudi.common.fs.FSUtils
 import org.apache.hudi.common.util.Option
-import org.apache.hudi.utilities.{IdentitySplitter, UtilHelpers}
 import org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer.Config
+import org.apache.hudi.utilities.{IdentitySplitter, UtilHelpers}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.Trigger
+import tech.odes.hudi.spark.Utils
 
 import scala.collection.JavaConverters._
-import java.util.Objects
 
 
 /**
