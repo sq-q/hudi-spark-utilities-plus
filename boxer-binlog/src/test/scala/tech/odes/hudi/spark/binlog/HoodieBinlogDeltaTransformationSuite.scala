@@ -1,4 +1,4 @@
-package tech.odes.hudi.spark.deltastreamer
+package tech.odes.hudi.spark.binlog
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.Trigger
