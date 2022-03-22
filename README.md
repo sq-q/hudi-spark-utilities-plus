@@ -6,16 +6,15 @@ Refactor the Hudi-based Spark library.
 
 1.**CDC Ingestion**
 
-- [Binary Logs Ingestion](docs/binlog/01.Binary Logs Ingestion.md)
-
+- [Binary Logs Ingestion](./docs/binlog/01.Binary Logs Ingestion.md)
 
 2.**Documents Ingestion**
 
 
-- [MongoDB（dev）](docs/document/01.MongoDB Ingestion.md)
+- [MongoDB（dev）](./docs/document/01.MongoDB Ingestion.md)
 
 
-- [Elasticsearch（dev）](docs/document/02.Elasticsearch Ingestion.md)
+- [Elasticsearch（dev）](./docs/document/02.Elasticsearch Ingestion.md)
 
 
 ### **How to Build？**
@@ -35,5 +34,4 @@ The library currently supports the following versions of components：
 - Spark：3.1.x
 
 - Hudi：0.9.0
-
 
