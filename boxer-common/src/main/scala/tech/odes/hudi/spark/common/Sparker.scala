@@ -1,10 +1,10 @@
-package tech.odes.hudi.spark
+package tech.odes.hudi.spark.common
 
 import java.util
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
-object Utils {
+object Sparker {
   private def defaultConf = {
     val additionalConfigs = new util.HashMap[String, String]
     additionalConfigs.put("spark.serializer", "org.apache.spark.serializer.KryoSerializer")

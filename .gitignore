@@ -2,3 +2,4 @@ target/
 .idea/
 hudi-spark-utilties-plus.iml
 *.iml
+*/*.iml

@@ -1,7 +1,6 @@
-package tech.odes.hudi.spark.deltastreamer
+package tech.odes.hudi.spark.binlog
 
 import java.util.Objects
-
 import com.beust.jcommander.{JCommander, Parameter}
 import com.beust.jcommander.internal.Lists
 import org.apache.commons.lang3.StringUtils
@@ -15,7 +14,7 @@ import org.apache.hudi.utilities.{IdentitySplitter, UtilHelpers}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.Trigger
-import tech.odes.hudi.spark.Utils
+import tech.odes.hudi.spark.common.Sparker
 
 import scala.collection.JavaConverters._
 
@@ -297,7 +296,7 @@ object HoodieBinlogDeltaStreamer extends Logging {
 
   def main(args: Array[String]): Unit = {
     val cfg = config(args)
-    val spark = Utils.buildSparkSession(appName(cfg), null)
+    val spark = Sparker.buildSparkSession(appName(cfg), null)
     try {
       val deltaStreamer = new HoodieBinlogDeltaStreamer(cfg, spark)
       deltaStreamer.print
