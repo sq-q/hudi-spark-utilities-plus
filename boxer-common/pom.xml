@@ -34,6 +34,12 @@
             <artifactId>spark-sql_${scala.binary.version}</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- hudi -->
+        <dependency>
+            <groupId>org.apache.hudi</groupId>
+            <artifactId>hudi-common</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

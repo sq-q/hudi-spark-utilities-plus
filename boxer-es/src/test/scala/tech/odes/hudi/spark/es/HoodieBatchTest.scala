@@ -1,4 +1,4 @@
-package tech.odes.hudi.spark.batch
+package tech.odes.hudi.spark.es
 
 import org.apache.hudi.DataSourceWriteOptions
 import org.apache.spark.SparkConf
