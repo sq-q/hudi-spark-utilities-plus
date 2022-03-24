@@ -17,6 +17,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>tech.odes</groupId>
+            <artifactId>boxer-es</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- scala -->
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -32,6 +37,13 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!--hudi-->
+        <dependency>
+            <groupId>org.apache.hudi</groupId>
+            <artifactId>hudi-common</artifactId>
+            <version>${hoodie.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

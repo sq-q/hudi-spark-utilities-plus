@@ -160,7 +160,7 @@
     </dependencies>
 
     <build>
-        <finalName>boxer-binlog-bundle-${project.version}</finalName>
+        <finalName>boxer-es-${project.version}</finalName>
         <sourceDirectory>src/main/scala</sourceDirectory>
         <resources>
             <resource>
