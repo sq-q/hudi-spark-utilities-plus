@@ -1,10 +1,10 @@
 package tech.odes.hudi.spark.es
 
-import java.util
-
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.beust.jcommander.internal.Lists
+import java.util.Set
+import java.util.Objects
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hudi.common.config.TypedProperties
@@ -14,13 +14,9 @@ import org.apache.hudi.utilities.{IdentitySplitter, UtilHelpers}
 import org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer.Config
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{DataFrameReader, SaveMode, SparkSession}
-
 import scala.collection.JavaConverters._
-import java.util.Objects
-
-import org.slf4j.LoggerFactory
 import tech.odes.hudi.spark.common.Sparker
-import tech.odes.hudi.spark.transform.{FlattenDF, TransformSql}
+import tech.odes.hudi.spark.transforms.TransformUtils
 
 /**
  * The purpose of this class is to encapsulate a spark application for synchronization of data from ES
@@ -32,26 +28,22 @@ class HoodieESBatch(val cfg: HoodieESBatch.Config,
                     val conf: Configuration,
                     val props: Option[TypedProperties]) extends Logging {
 
-  private val logger = LoggerFactory.getLogger(classOf[HoodieESBatch])
   private var properties: TypedProperties = null
 
   init
 
-  def this(
-            cfg: HoodieESBatch.Config,
-            spark: SparkSession) = this(cfg, spark, spark.sparkContext.hadoopConfiguration, Option.empty())
+  def this(cfg: HoodieESBatch.Config,
+           spark: SparkSession) = this(cfg, spark, spark.sparkContext.hadoopConfiguration, Option.empty())
 
-  def this(
-            cfg: HoodieESBatch.Config,
-            spark: SparkSession,
-            props: Option[TypedProperties]) = this(cfg, spark, spark.sparkContext.hadoopConfiguration, props)
+  def this(cfg: HoodieESBatch.Config,
+           spark: SparkSession,
+           props: Option[TypedProperties]) = this(cfg, spark, spark.sparkContext.hadoopConfiguration, props)
 
-  def this(
-            cfg: HoodieESBatch.Config,
-            spark: SparkSession,
-            conf: Configuration) = this(cfg, spark, conf, Option.empty())
+  def this(cfg: HoodieESBatch.Config,
+           spark: SparkSession,
+           conf: Configuration) = this(cfg, spark, conf, Option.empty())
 
-  def init() = {
+  def init = {
     // Resolving the properties first in a consistent way
     if (props.isPresent) {
       this.properties = props.get
@@ -65,38 +57,35 @@ class HoodieESBatch(val cfg: HoodieESBatch.Config,
     }
   }
 
-
   def validate: Unit = {
     if (Objects.isNull(this.properties) || this.properties.isEmpty) {
       throw new RuntimeException("table config is missing!")
     }
-
-    if (Objects.isNull(this.properties.getString(HoodieESBatch.ES_NODES)) &&
-      Objects.isNull(this.properties.getString(HoodieESBatch.ES_PORT))){
-      throw new RuntimeException("Nodes and port are required fields, please enter nodes and port")
+    if (Objects.isNull(this.properties.getString(HoodieESBatch.ES_RESOURCE))) {
+      throw new RuntimeException("--resource is required, please fill out resouce")
+    }
+    if (Objects.isNull(this.properties.getString(HoodieESBatch.ES_NODES))) {
+      throw new RuntimeException("--nodes is required, please fill out nodes")
+    }
+    if (Objects.isNull(this.properties.getString(HoodieESBatch.ES_PORT))) {
+      throw new RuntimeException("--port is required fields, please fill out port")
     }
   }
 
-  def esOptions(properties: TypedProperties, dataFrameReader: DataFrameReader): Unit = {
-    val objects: util.Set[AnyRef] = properties.keySet
+  def addExtraOptions(properties: TypedProperties, frameReader: DataFrameReader): Unit = {
+    val objects: Set[AnyRef] = properties.keySet
     import scala.collection.JavaConversions._
     for (property <- objects) {
       val prop: String = property.toString
       if (prop.startsWith(cfg.EXTRA_OPTIONS)) {
-        val key: String = prop.replace(cfg.EXTRA_OPTIONS,"")
+        val key: String = prop.replace(cfg.EXTRA_OPTIONS, StringUtils.EMPTY_STRING)
         val value: String = properties.getString(prop)
         if (!StringUtils.isNullOrEmpty(value)) {
-          logger.info(String.format("Adding %s -> %s to es options", key, value))
-          dataFrameReader.option(key, value)
+          logInfo(String.format("Adding %s -> %s to es options", key, value))
+          frameReader.option(key, value)
         }
       }
     }
-  }
-
-  def DataFrameReader(spark: SparkSession, properties: TypedProperties): DataFrameReader = {
-    val dataFrameReader = spark.read.format("es")
-    esOptions(properties, dataFrameReader)
-    dataFrameReader
   }
 
   def sync() = {
@@ -107,52 +96,47 @@ class HoodieESBatch(val cfg: HoodieESBatch.Config,
       tableConfig += (name -> this.properties.getString(name))
     })
 
-    val df = DataFrameReader(spark, properties).
-      option(HoodieESBatch.ES_RESOURCE, cfg.index).
-      options(tableConfig.toMap).load
+    val dataFrameReader = spark.read.format("es").
+      option(HoodieESBatch.ES_RESOURCE, cfg.resource).
+      option(HoodieESBatch.ES_NODES, cfg.nodes).
+      option(HoodieESBatch.ES_PORT, cfg.port)
 
+    addExtraOptions(this.properties, dataFrameReader)
+
+    var df = dataFrameReader.load
+
+    // print original schema
     df.printSchema()
 
-    if (properties.containsKey(HoodieESBatch.VALIDATE) && properties.getBoolean(HoodieESBatch.VALIDATE)){
-      val frame = FlattenDF.flattenDataframe(df)
-      if (properties.containsKey(TransformSql.TRANSFORMER_SQL)) {
-        val tframe = TransformSql.transform(spark, frame, properties)
-        tframe.write.
-          mode("append").
-          format("hudi").
-          options(tableConfig.toMap).
-          save()
-      }else{
-        frame.write.
-          mode("append").
-          format("hudi").
-          options(tableConfig.toMap).
-          save()
-      }
-    }else{
-      if (properties.containsKey(TransformSql.TRANSFORMER_SQL)) {
-        val tframe =TransformSql.transform(spark, df, properties)
-        tframe.write.
-          mode("append").
-          format("hudi").
-          options(tableConfig.toMap).
-          save()
-      }else{
-        df.write.
-          mode("append").
-          format("hudi").
-          options(tableConfig.toMap).
-          save()
-      }
+    // auto flatten
+    if (this.properties.containsKey(HoodieESBatch.ES_AUTO_FLATTEN_ENABLE) &&
+        this.properties.getBoolean(HoodieESBatch.ES_AUTO_FLATTEN_ENABLE)){
+      df = TransformUtils.flatten(df)
     }
+
+    // transform
+    if (this.properties.containsKey(TransformUtils.TRANSFORMER_SQL) &&
+        Objects.isNull(this.properties.getString(TransformUtils.TRANSFORMER_SQL))){
+      df = TransformUtils.transform(spark, df, this.properties)
+    }
+
+    df.write.
+      mode(SaveMode.Append).
+      format("hudi").
+      options(tableConfig.toMap).
+      save()
   }
 
-  def console() = {
-    val df = DataFrameReader(spark, properties).
-      option(HoodieESBatch.ES_RESOURCE, cfg.index).
-      option(HoodieESBatch.ES_NODES, properties.getString(HoodieESBatch.ES_NODES)).
-      option(HoodieESBatch.ES_PORT, properties.getString(HoodieESBatch.ES_PORT)).
-      load
+  def console = {
+    val dataFrameReader = spark.read.format("es").
+      option(HoodieESBatch.ES_RESOURCE, cfg.resource).
+      option(HoodieESBatch.ES_NODES, cfg.nodes).
+      option(HoodieESBatch.ES_PORT, cfg.port)
+
+    addExtraOptions(this.properties, dataFrameReader)
+
+    val df = dataFrameReader.load
+
     df.show(10, false)
   }
 }
@@ -165,8 +149,6 @@ object HoodieESBatch extends Logging {
    * Requires the format <index>/<type> (relative to the Elasticsearch host/port (see below))).
    */
   private val ES_RESOURCE = "es.resource"
-  // hoodie.deltastreamer.es.resource
-  // hoodie.deltastreamer.es.extra.options.xxx
 
   /**
    * {@value #ES_NODES} List of Elasticsearch nodes to connect to.
@@ -181,17 +163,25 @@ object HoodieESBatch extends Logging {
   private val ES_PORT = "es.port"
 
   /**
-   * {@value #VALIDATE}Whether nested json or nested json arrays are automatically expanded, the default is false
+   * {@value #AUTO_FLATTEN_ENABLE} Whether nested json or nested json arrays are automatically expanded, the default is false
    */
-  private val VALIDATE = "hoodie.deltastreamer.flatten.json.enable"
+  private val ES_AUTO_FLATTEN_ENABLE = "hoodie.deltastreamer.es.auto.flatten.enable"
 
   class Config extends Serializable {
 
     val DEFAULT_DFS_SOURCE_PROPERTIES: String =
       s"file://${System.getProperty("user.dir")}/src/test/resources/delta-streamer-config/dfs-source.properties"
 
-    @Parameter(names = Array("--index"),description = "elasticsearch resource")
-    var index : String = null
+    @Parameter(names = Array("--resource"),description = "Elasticsearch resource location, where data is read and written to. " +
+      "Requires the format <index>/<type> (relative to the Elasticsearch host/port (see below))).",required = true)
+    var resource: String = null
+
+    @Parameter(names = Array("--nodes"),description = "List of Elasticsearch nodes to connect to.",required = true)
+    var nodes: String = null
+
+    @Parameter(names = Array("--port"),description = "Default HTTP/REST port used for connecting to Elasticsearch - this setting is applied to the nodes in es." +
+      " nodes that do not have any port specified.",required = true)
+    var port: String = null
 
     @Parameter(names = Array("--props"),
       description = "path to properties file on localfs or dfs, with configurations for hoodie client, schema provider, " +
@@ -218,7 +208,9 @@ object HoodieESBatch extends Logging {
       s"""
          |=============================================
          |propsFilePath: $propsFilePath
-         |index: $index
+         |resource: $resource
+         |nodes: $nodes
+         |port: $port
          |debug: $debug
          |help: $help
          |configs:
@@ -239,7 +231,7 @@ object HoodieESBatch extends Logging {
     cfg
   }
 
-  def appName(config: Config): String = s"hoodie-es-batch-${config.index}"
+  def appName(config: Config): String = s"hoodie-es-batch-${config.resource}"
 
   def main(args: Array[String]): Unit = {
     val cfg = config(args)
@@ -247,7 +239,7 @@ object HoodieESBatch extends Logging {
     try {
       val batch = new HoodieESBatch(cfg, spark)
       if (cfg.debug) {
-        batch.console()
+        batch.console
       } else {
         batch.sync()
       }
@@ -255,5 +247,4 @@ object HoodieESBatch extends Logging {
       case e: Exception => e.printStackTrace()
     }
   }
-
 }

@@ -17,11 +17,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>tech.odes</groupId>
-            <artifactId>boxer-es</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <!-- scala -->
         <dependency>
             <groupId>org.scala-lang</groupId>
