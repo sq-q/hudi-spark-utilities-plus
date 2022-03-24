@@ -13,6 +13,7 @@
         <module>boxer-binlog</module>
         <module>boxer-common</module>
         <module>boxer-es</module>
+        <module>boxer-mongodb</module>
     </modules>
 
     <properties>
