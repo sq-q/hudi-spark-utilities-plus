@@ -22,13 +22,13 @@ object HoodieMongoBatchTest {
       "spark.mongodb.input.uri" -> "mongodb://172.16.10.72:27017/sang.sang_kong",
       "spark.mongodb.input.partitionerOptions.partitionKey" -> "_id"
     )
+
     val df = spark.read.format("mongo")
       .options(options)
       .load()
 
     df.printSchema()
     df.show(false)
-    df.show()
 
     df.write.format("hudi")
       .option("hoodie.datasource.write.recordkey.field", "_id") //设置主键

@@ -1,8 +1,7 @@
 package tech.odes.hudi.spark.mongodb
 
-import java.util
+import java.util.Set
 import java.util.Objects
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hudi.common.config.TypedProperties
@@ -14,13 +13,9 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{DataFrame, DataFrameReader, SaveMode, SparkSession}
 import com.beust.jcommander.{JCommander, Parameter}
 import com.beust.jcommander.internal.Lists
-import org.apache.log4j.LogManager
 import tech.odes.hudi.spark.common.Sparker
-import tech.odes.hudi.spark.mongodb.HoodieMongoBatch.logger
 import tech.odes.hudi.spark.transforms.TransformUtils
-
 import scala.collection.JavaConverters._
-
 
 /**
  *The purpose of this class is to encapsulate a spark application for batch reading mongodb data to a spark application in Hoodie.
@@ -36,17 +31,14 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
 
   init
 
-  def this(
-            cfg: HoodieMongoBatch.Config,
+  def this(cfg: HoodieMongoBatch.Config,
             spark: SparkSession) = this(cfg, spark, spark.sparkContext.hadoopConfiguration, Option.empty())
 
-  def this(
-            cfg: HoodieMongoBatch.Config,
+  def this(cfg: HoodieMongoBatch.Config,
             spark: SparkSession,
             props: Option[TypedProperties]) = this(cfg, spark, spark.sparkContext.hadoopConfiguration, props)
 
-  def this(
-            cfg: HoodieMongoBatch.Config,
+  def this(cfg: HoodieMongoBatch.Config,
             spark: SparkSession,
             conf: Configuration) = this(cfg, spark, conf, Option.empty())
 
@@ -74,24 +66,24 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
     }
 
     if (Objects.isNull(cfg.database) || cfg.database.isEmpty) {
-      throw new RuntimeException("Database are required fields, please enter database")
+      throw new RuntimeException("--database is required field, please enter database name")
     }
 
     if (Objects.isNull(cfg.collection) || cfg.collection.isEmpty) {
-      throw new RuntimeException("Collection are required fields, please enter collection")
+      throw new RuntimeException("--collection is required field, please enter collection name")
     }
   }
 
-  def mongoOptions(properties: TypedProperties, dataFrameReader: DataFrameReader): Unit = {
-    val objects: util.Set[AnyRef] = properties.keySet
+  def addMongodbExtraOptions(properties: TypedProperties, dataFrameReader: DataFrameReader): Unit = {
+    val objects: Set[AnyRef] = properties.keySet
     import scala.collection.JavaConversions._
     for (property <- objects) {
       val prop: String = property.toString
       if (prop.startsWith(cfg.EXTRA_OPTIONS)) {
-        val key: String = prop.replace(cfg.EXTRA_OPTIONS,"")
+        val key: String = prop.replace(cfg.EXTRA_OPTIONS,StringUtils.EMPTY_STRING)
         val value: String = properties.getString(prop)
         if (!StringUtils.isNullOrEmpty(value)) {
-          logger.info(String.format("Adding %s -> %s to es options", key, value))
+          logInfo(String.format("Adding %s -> %s to es options", key, value))
           dataFrameReader.option(key, value)
         }
       }
@@ -99,10 +91,11 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
   }
 
   def sync() = {
+    validate()
     val propertyNames = this.properties.stringPropertyNames
-    val TablesConfig = scala.collection.mutable.Map[String, String]()
+    val tablesConfig = scala.collection.mutable.Map[String, String]()
     propertyNames.asScala.foreach(name => {
-      TablesConfig += (name -> this.properties.getString(name))
+      tablesConfig += (name -> this.properties.getString(name))
     })
 
     val dataFrameReader = spark.read.format("mongo").
@@ -110,14 +103,17 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
       option(HoodieMongoBatch.DATABASE, cfg.database).
       option(HoodieMongoBatch.COLLECTION, cfg.database)
 
-    mongoOptions(properties, dataFrameReader)
+    addMongodbExtraOptions(properties, dataFrameReader)
+
     var df = dataFrameReader.load()
 
-    if(properties.containsKey(HoodieMongoBatch.FALLY_FLATTENED) &&
-      properties.getBoolean(HoodieMongoBatch.FALLY_FLATTENED)) {
+    //Auto fully flatten
+    if(properties.containsKey(HoodieMongoBatch.MONGO_AUTO_FuLLY_FLATTEN_ENABLE) &&
+      properties.getBoolean(HoodieMongoBatch.MONGO_AUTO_FuLLY_FLATTEN_ENABLE)) {
       df = TransformUtils.flatten(df)
     }
 
+    //transform sql
     if(properties.containsKey(TransformUtils.TRANSFORMER_SQL) &&
       Objects.isNull(this.properties.getString(TransformUtils.TRANSFORMER_SQL))) {
       df = TransformUtils.transform(spark, df, properties)
@@ -125,22 +121,24 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
 
     df.write.format("hudi").
       mode(SaveMode.Append).
-      options(TablesConfig.toMap).
+      options(tablesConfig.toMap).
       save()
   }
 
   def console() = {
-    val df = spark.read.
-      format("mongo").
-      option(HoodieMongoBatch.URI,cfg.database).
-      option(HoodieMongoBatch.DATABASE,cfg.database).
-      option(HoodieMongoBatch.COLLECTION,cfg.database).
-      load
+    val dataFrameReader = spark.read.format("mongo").
+      option(HoodieMongoBatch.URI, cfg.database).
+      option(HoodieMongoBatch.DATABASE, cfg.database).
+      option(HoodieMongoBatch.COLLECTION, cfg.database)
+
+    addMongodbExtraOptions(properties, dataFrameReader)
+
+    val df = dataFrameReader.load()
+
     df.show(10,false)
   }
 }
 object HoodieMongoBatch extends Logging {
-  private val logger = LogManager.getLogger(classOf[HoodieMongoBatch])
 
   /**
    * {@value #URI} The connection string in the form mongodb://host:port/.
@@ -160,26 +158,26 @@ object HoodieMongoBatch extends Logging {
   private val COLLECTION = "collection"
 
   /**
-   * {@value #FALLY_FLATTENED}Whether the nested json or nested json array is fully flattened, defaults to false
+   * {@value #MONGO_AUTO_FuLLY_FLATTEN_ENABLE}Whether the nested json or nested json array is fully flattened, defaults to false
    */
-  private val FALLY_FLATTENED = "hoodie.deltastreamer.mongodb.fally.flattened.enable";
+  private val MONGO_AUTO_FuLLY_FLATTEN_ENABLE = "hoodie.deltastreamer.mongodb.auto.fully.flatten.enable";
 
   class Config extends Serializable {
     val DEFAULT_DFS_SOURCE_PROPERTIES: String =
       s"file://${System.getProperty("user.dir")}/src/test/resources/delta-streamer-config/dfs-source.properties"
 
     @Parameter(names = Array("--uri"),
-      description = "Mongodb uri",
-      required = true)
+      description = "The connection string in the form mongodb://host:port/." +
+      "The host can be a hostname.It uses the default MongoDB port, 27017.", required = true)
     var uri: String = null
 
     @Parameter(names = Array("--db"),
-      description = "Mongodb database ",
+      description = "The database name to read data from",
       required = true)
     var database: String = null
 
     @Parameter(names = Array("--c"),
-      description = "Mongodb collection ",
+      description = "The collection name to read data from.",
       required = true)
     var collection: String = null
 
@@ -231,22 +229,18 @@ object HoodieMongoBatch extends Logging {
     cfg
   }
 
-  def appName(config: Config): String = {
-    val database = config.database
-    val tableString = config.collection
-    s"hoodie-${database}-${tableString}"
-  }
+  def appName(config: Config): String = s"hoodie-${config.database}-${config.collection}"
+
 
   def main(args: Array[String]): Unit = {
     val cfg = config(args)
     val spark = Sparker.buildSparkSession(appName(cfg), null)
     try {
-      val deltaStreamer = new HoodieMongoBatch(cfg, spark)
-      println(deltaStreamer)
+      val mongobatch = new HoodieMongoBatch(cfg, spark)
       if (cfg.debug) {
-        deltaStreamer.console()
+        mongobatch.console()
       } else {
-        deltaStreamer.sync()
+        mongobatch.sync()
       }
     } catch {
       case e: Exception => e.printStackTrace()
