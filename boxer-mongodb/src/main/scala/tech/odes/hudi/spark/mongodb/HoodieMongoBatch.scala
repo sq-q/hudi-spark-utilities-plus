@@ -62,7 +62,7 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
     }
 
     if (Objects.isNull(cfg.uri)) {
-      throw new RuntimeException("Nodes and port are required fields, please enter uri")
+      throw new RuntimeException("--uri is required field, please enter uri")
     }
 
     if (Objects.isNull(cfg.database)) {
@@ -166,17 +166,14 @@ object HoodieMongoBatch extends Logging {
     val DEFAULT_DFS_SOURCE_PROPERTIES: String =
       s"file://${System.getProperty("user.dir")}/src/test/resources/delta-streamer-config/dfs-source.properties"
 
-    @Parameter(names = Array("--uri"),
-      description = "The connection string in the form mongodb://host:port/." +
+    @Parameter(names = Array("--uri"), description = "The connection string in the form mongodb://host:port/." +
       "The host can be a hostname.It uses the default MongoDB port, 27017.", required = true)
     var uri: String = null
 
-    @Parameter(names = Array("--db"),
-      description = "The database name to read data from", required = true)
+    @Parameter(names = Array("--db"), description = "The database name to read data from", required = true)
     var database: String = null
 
-    @Parameter(names = Array("--c"),
-      description = "The collection name to read data from.", required = true)
+    @Parameter(names = Array("--c"), description = "The collection name to read data from.", required = true)
     var collection: String = null
 
     @Parameter(names = Array("--props"),
