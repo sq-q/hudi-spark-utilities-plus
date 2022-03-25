@@ -89,6 +89,9 @@ class HoodieESBatch(val cfg: HoodieESBatch.Config,
   }
 
   def sync() = {
+
+    validate
+
     // popluate hoodie tables config
     val propertyNames = this.properties.stringPropertyNames
     val tableConfig = scala.collection.mutable.Map[String, String]()

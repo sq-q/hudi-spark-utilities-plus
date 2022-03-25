@@ -127,7 +127,7 @@
             <groupId>org.apache.hudi</groupId>
             <artifactId>hudi-utilities_${scala.binary.version}</artifactId>
             <version>${hoodie.version}</version>
-            <scope>provided</scope>
+<!--            <scope>provided</scope>-->
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
