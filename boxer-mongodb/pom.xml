@@ -14,6 +14,7 @@
     <properties>
         <mongodb.version>3.6.2</mongodb.version>
         <hadoop.version>2.10.1</hadoop.version>
+        <spark.version>3.1.1</spark.version>
     </properties>
 
     <dependencies>
@@ -33,14 +34,18 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-hive_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -49,16 +54,18 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-avro_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
         </dependency>
 
-        <!--mongo-spark-->
+        <!-- mongo-spark -->
         <dependency>
             <groupId>org.mongodb.spark</groupId>
             <artifactId>mongo-spark-connector_${scala.binary.version}</artifactId>
             <version>3.0.1</version>
         </dependency>
 
-        <!--hudi-->
+        <!-- hudi -->
         <dependency>
             <groupId>org.apache.hudi</groupId>
             <artifactId>hudi-client</artifactId>
@@ -91,7 +98,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!--hadoop-->
+        <!-- hadoop -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
@@ -103,6 +110,11 @@
             <version>${hadoop.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.72</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -163,5 +175,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

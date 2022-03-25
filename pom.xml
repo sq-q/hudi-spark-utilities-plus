@@ -29,6 +29,7 @@
 
     <dependencyManagement>
         <dependencies>
+
             <!-- scala -->
             <dependency>
                 <groupId>org.scala-lang</groupId>
