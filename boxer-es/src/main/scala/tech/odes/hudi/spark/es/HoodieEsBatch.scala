@@ -61,13 +61,13 @@ class HoodieESBatch(val cfg: HoodieESBatch.Config,
     if (Objects.isNull(this.properties) || this.properties.isEmpty) {
       throw new RuntimeException("table config is missing!")
     }
-    if (Objects.isNull(this.properties.getString(HoodieESBatch.ES_RESOURCE))) {
+    if (Objects.isNull(cfg.resource)) {
       throw new RuntimeException("--resource is required, please fill out resouce")
     }
-    if (Objects.isNull(this.properties.getString(HoodieESBatch.ES_NODES))) {
+    if (Objects.isNull(cfg.nodes)) {
       throw new RuntimeException("--nodes is required, please fill out nodes")
     }
-    if (Objects.isNull(this.properties.getString(HoodieESBatch.ES_PORT))) {
+    if (Objects.isNull(cfg.port)) {
       throw new RuntimeException("--port is required fields, please fill out port")
     }
   }
