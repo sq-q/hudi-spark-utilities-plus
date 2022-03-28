@@ -10,9 +10,9 @@ Refactor the Hudi-based Spark library.
 
 2.**Documents Ingestion**
 
-- MongoDB（dev）
+- MongoDB
 
-- Elasticsearch（dev）
+- Elasticsearch
 
 
 ### **How to Build？**
