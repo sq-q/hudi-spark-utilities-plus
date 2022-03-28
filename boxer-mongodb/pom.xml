@@ -95,7 +95,7 @@
             <groupId>org.apache.hudi</groupId>
             <artifactId>hudi-utilities_${scala.binary.version}</artifactId>
             <version>${hoodie.version}</version>
-            <scope>provided</scope>
+<!--            <scope>provided</scope>-->
         </dependency>
 
         <!-- hadoop -->
@@ -110,11 +110,6 @@
             <version>${hadoop.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.72</version>
-        </dependency>
     </dependencies>
 
     <build>

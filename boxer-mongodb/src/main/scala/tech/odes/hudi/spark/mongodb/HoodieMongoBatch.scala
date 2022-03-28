@@ -79,8 +79,8 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
     import scala.collection.JavaConversions._
     for (property <- objects) {
       val prop: String = property.toString
-      if (prop.startsWith(cfg.EXTRA_OPTIONS)) {
-        val key: String = prop.replace(cfg.EXTRA_OPTIONS,StringUtils.EMPTY_STRING)
+      if (prop.startsWith(HoodieMongoBatch.EXTRA_OPTIONS)) {
+        val key: String = prop.replace(HoodieMongoBatch.EXTRA_OPTIONS,StringUtils.EMPTY_STRING)
         val value: String = properties.getString(prop)
         if (!StringUtils.isNullOrEmpty(value)) {
           logInfo(String.format("Adding %s -> %s to es options", key, value))
@@ -107,13 +107,13 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
 
     var df = dataFrameReader.load()
 
-    //Auto flatten
+    // Auto flatten
     if(properties.containsKey(HoodieMongoBatch.MONGO_AUTO_FLATTEN_ENABLE) &&
       properties.getBoolean(HoodieMongoBatch.MONGO_AUTO_FLATTEN_ENABLE)) {
       df = TransformUtils.flatten(df)
     }
 
-    //transform sql
+    // transform sql
     if(properties.containsKey(TransformUtils.TRANSFORMER_SQL) &&
       Objects.isNull(this.properties.getString(TransformUtils.TRANSFORMER_SQL))) {
       df = TransformUtils.transform(spark, df, properties)
@@ -138,6 +138,7 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
     df.show(10,false)
   }
 }
+
 object HoodieMongoBatch extends Logging {
 
   /**
@@ -160,7 +161,12 @@ object HoodieMongoBatch extends Logging {
   /**
    * {@value #MONGO_AUTO_FLATTEN_ENABLE}Whether nested json or nested json arrays are automatically expanded, the default is false
    */
-  private val MONGO_AUTO_FLATTEN_ENABLE = "hoodie.deltastreamer.mongodb.auto.flatten.enable";
+  private val MONGO_AUTO_FLATTEN_ENABLE = "hoodie.deltastreamer.mongodb.auto.flatten.enable"
+
+  /**
+   * {@value #EXTRA_OPTIONS} Used to set any extra options the user specifies for mongodb.
+   */
+  private val EXTRA_OPTIONS = "hoodie.deltastreamer.mongodb.extra.options."
 
   class Config extends Serializable {
     val DEFAULT_DFS_SOURCE_PROPERTIES: String =
@@ -170,10 +176,10 @@ object HoodieMongoBatch extends Logging {
       "The host can be a hostname.It uses the default MongoDB port, 27017.", required = true)
     var uri: String = null
 
-    @Parameter(names = Array("--db"), description = "The database name to read data from", required = true)
+    @Parameter(names = Array("--database"), description = "The database name to read data from", required = true)
     var database: String = null
 
-    @Parameter(names = Array("--c"), description = "The collection name to read data from.", required = true)
+    @Parameter(names = Array("--collection"), description = "The collection name to read data from.", required = true)
     var collection: String = null
 
     @Parameter(names = Array("--props"),
@@ -196,8 +202,6 @@ object HoodieMongoBatch extends Logging {
 
     @Parameter(names = Array("--help", "-h"), help = true)
     var help: Boolean = false
-
-    var EXTRA_OPTIONS = "hoodie.deltastreamer.mongodb.extra.options."
 
     override def toString =
       s"""
