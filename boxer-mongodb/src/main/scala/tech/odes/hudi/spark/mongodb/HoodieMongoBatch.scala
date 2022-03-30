@@ -80,7 +80,7 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
     for (property <- objects) {
       val prop: String = property.toString
       if (prop.startsWith(HoodieMongoBatch.EXTRA_OPTIONS)) {
-        val key: String = prop.replace(HoodieMongoBatch.EXTRA_OPTIONS,StringUtils.EMPTY_STRING)
+        val key: String = prop.replace(HoodieMongoBatch.EXTRA_OPTIONS, StringUtils.EMPTY_STRING)
         val value: String = properties.getString(prop)
         if (!StringUtils.isNullOrEmpty(value)) {
           logInfo(String.format("Adding %s -> %s to es options", key, value))
@@ -115,7 +115,7 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
 
     // transform sql
     if(properties.containsKey(TransformUtils.TRANSFORMER_SQL) &&
-      Objects.isNull(this.properties.getString(TransformUtils.TRANSFORMER_SQL))) {
+      Objects.nonNull(this.properties.getString(TransformUtils.TRANSFORMER_SQL))) {
       df = TransformUtils.transform(spark, df, properties)
     }
 
