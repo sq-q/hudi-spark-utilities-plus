@@ -98,8 +98,20 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
       tablesConfig += (name -> this.properties.getString(name))
     })
 
+    var mongo_uri = cfg.uri
+    if (properties.containsKey(HoodieMongoBatch.USER) &&
+      Objects.nonNull(this.properties.getString(HoodieMongoBatch.USER)) &&
+      properties.containsKey(HoodieMongoBatch.PASSWORD) &&
+      Objects.nonNull(this.properties.getString(HoodieMongoBatch.PASSWORD))) {
+      val user = this.properties.getString(HoodieMongoBatch.USER)
+      val password = this.properties.getString(HoodieMongoBatch.PASSWORD)
+      val strings = mongo_uri.split("//")
+      val db = cfg.database
+      mongo_uri = s"${strings(0)}//${user}:${password}@${strings(1)}${db}"
+    }
+
     val dataFrameReader = spark.read.format("mongo").
-      option(HoodieMongoBatch.URI, cfg.uri).
+      option(HoodieMongoBatch.URI, mongo_uri).
       option(HoodieMongoBatch.DATABASE, cfg.database).
       option(HoodieMongoBatch.COLLECTION, cfg.collection)
 
@@ -157,6 +169,16 @@ object HoodieMongoBatch extends Logging {
    * {@value #COLLECTION} The collection name to read data from.
    */
   private val COLLECTION = "collection"
+
+  /**
+   * {@value #USER} mongodb username
+   */
+  private val USER = "user"
+
+  /**
+   * {@value #PASSWORD} mongodb password
+   */
+  private val PASSWORD = "password"
 
   /**
    * {@value #MONGO_AUTO_FLATTEN_ENABLE}Whether nested json or nested json arrays are automatically expanded, the default is false
