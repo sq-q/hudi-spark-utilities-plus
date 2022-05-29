@@ -74,7 +74,7 @@ class HoodieExcelImporter(val cfg: HoodieExcelImporter.Config,
         val key: String = prop.replace(cfg.EXTRA_OPTIONS, StringUtils.EMPTY_STRING)
         val value: String = properties.getString(prop)
         if (!StringUtils.isNullOrEmpty(value)) {
-          logInfo(String.format("Adding %s -> %s to es options", key, value))
+          logInfo(String.format("Adding %s -> %s to excel options", key, value))
           frameReader.option(key, value)
         }
       }
