@@ -6,13 +6,21 @@ Refactor the Hudi-based Spark library.
 
 1.**CDC Ingestion**
 
-- Binary Logs Ingestion
+- Binary Logs Ingestion（MySQL）
 
 2.**Documents Ingestion**
 
 - MongoDB
 
 - Elasticsearch
+
+3.**File Ingestion**
+
+- Excel
+
+4.**RDB Ingestion**
+
+- JDBC
 
 
 ### **How to Build？**
