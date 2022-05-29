@@ -13,8 +13,9 @@
         <module>boxer-binlog</module>
         <module>boxer-common</module>
         <module>boxer-es</module>
-        <module>boxer-mongodb</module>
         <module>boxer-excel</module>
+        <module>boxer-jdbc</module>
+        <module>boxer-mongodb</module>
     </modules>
 
     <properties>
