@@ -14,6 +14,7 @@
         <module>boxer-common</module>
         <module>boxer-es</module>
         <module>boxer-mongodb</module>
+        <module>boxer-excel</module>
     </modules>
 
     <properties>
