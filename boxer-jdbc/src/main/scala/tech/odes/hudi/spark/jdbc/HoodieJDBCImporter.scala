@@ -137,7 +137,17 @@ class HoodieJDBCImporter(val cfg: HoodieJDBCImporter.Config,
 
 object HoodieJDBCImporter extends Logging {
 
-  val __JDBC_SOURCE = Array("mysql", "postgresql", "db2", "sqlserver", "oracle", "teradata", "h2", "derby")
+  val __JDBC_SOURCE = Array(
+    "mysql",
+    "postgresql",
+    "db2",
+    "sqlserver",
+    "oracle",
+    "teradata",
+    "h2",
+    "derby",
+    // domenstic db
+    "dm")
 
   val __JDBC_FORMAT = "jdbc"
 
