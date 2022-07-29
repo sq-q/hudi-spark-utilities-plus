@@ -131,6 +131,10 @@ class HoodieMongoBatch(val cfg: HoodieMongoBatch.Config,
       df = TransformUtils.transform(spark, df, properties)
     }
 
+    if(df.head(1).isEmpty) {
+      throw new IllegalArgumentException("The database or collection may not exist or may be empty")
+    }
+
     df.write.format("hudi").
       mode(SaveMode.Append).
       options(tablesConfig.toMap).
